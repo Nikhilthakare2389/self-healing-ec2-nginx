@@ -22,8 +22,8 @@ EC2 (Nginx) → Cron health-check script → CloudWatch custom metric
 - AWS EC2, CloudWatch, SNS, Lambda, Systems Manager (SSM), IAM
 - Bash, Python (boto3)
 
-## Screenshots
-(add these after)
+
+
 
 ## What I'd add next
 - Replace the failed instance via an Auto Scaling Group instead of just restarting a service

@@ -1,131 +1,48 @@
-# 🚀 Self-Healing EC2 Infrastructure on AWS
+# Self-Healing EC2 Infrastructure
 
-Automated failure detection and self-recovery for an Nginx web server running on AWS EC2 using **Amazon CloudWatch, SNS, AWS Lambda, and Systems Manager (SSM)**.
+This project monitors an Nginx service running on an AWS EC2 instance. If the service stops, the system detects the failure and attempts to restart Nginx automatically.
 
-This project demonstrates how to build a self-healing infrastructure that detects service failures, automatically restarts the failed service, and sends email notifications without requiring manual intervention.
+## Architecture
 
-## 📌 Problem Statement
+![Self-Healing EC2 Infrastructure Architecture](./architecture.svg)
 
-Servers and applications can fail unexpectedly. Manually identifying failures and restarting services can increase downtime and requires continuous human monitoring.
+## How it works
 
-This project solves that problem by implementing automated monitoring, failure detection, alerting, and recovery using AWS services.
+1. A Bash health-check script (`healthcheck.sh`) runs every minute through cron and checks whether Nginx is active.
+2. The script publishes a custom metric to CloudWatch: `1` when Nginx is running and `0` when it is down.
+3. A CloudWatch Alarm monitors the metric and triggers after two consecutive failed checks.
+4. The alarm publishes a message to an SNS topic. SNS sends an email notification and invokes the Lambda function.
+5. The Lambda function (`lambda_function.py`) uses AWS Systems Manager (SSM) to send a command to the EC2 instance.
+6. SSM runs the command to restart Nginx.
 
-## 🏗️ Architecture
+## AWS services and tools
 
-```mermaid
-flowchart TD
-    A["AWS EC2 Instance<br/>Nginx Web Server"] --> B["Cron Job<br/>healthcheck.sh"]
-    B --> C["CloudWatch<br/>Custom Metric"]
-    C --> D{"CloudWatch Alarm<br/>Healthy = 1 / Down = 0"}
-    D -->|Failure Detected| E["Amazon SNS"]
-    E --> F["Email Notification"]
-    E --> G["AWS Lambda<br/>Python / Boto3"]
-    G --> H["AWS Systems Manager<br/>SSM SendCommand"]
-    H --> I["Restart Nginx Service"]
-    I --> J["EC2 Nginx Service<br/>Recovered"]
-
-    style A fill:#2563eb,color:#fff
-    style E fill:#9333ea,color:#fff
-    style G fill:#9333ea,color:#fff
-    style J fill:#15803d,color:#fff
-```
-
-### Architecture Components
-
-| AWS Service | Purpose |
-|---|---|
-| EC2 | Hosts the Nginx web server |
-| Cron | Executes health checks every minute |
-| CloudWatch | Collects custom health metrics |
-| CloudWatch Alarm | Detects service failures |
-| SNS | Sends notifications and triggers Lambda |
-| Lambda | Executes automated recovery logic |
-| Systems Manager (SSM) | Remotely executes restart commands |
-| IAM | Provides secure permissions |
-
-## ⚙️ How It Works
-
-1. **Health Monitoring:** A Bash script (`healthcheck.sh`) runs every minute through cron and checks whether Nginx is running.
-2. **Metric Publishing:** The script sends a custom CloudWatch metric:
-   - `1` = Nginx is healthy.
-   - `0` = Nginx is down.
-3. **Failure Detection:** CloudWatch Alarm monitors the metric and triggers when two consecutive checks report failure.
-4. **SNS Notification:** CloudWatch publishes an alarm notification to an SNS topic.
-5. **Lambda Execution:** SNS invokes the Python Lambda function.
-6. **Automated Recovery:** Lambda uses AWS Systems Manager (SSM) to execute a command on the EC2 instance and restart Nginx.
-7. **Email Alert:** SNS sends an email notification about the failure.
-
-## 🛠️ Technologies Used
-
-- AWS EC2
+- Amazon EC2
 - Amazon CloudWatch
 - Amazon SNS
 - AWS Lambda
 - AWS Systems Manager (SSM)
 - AWS IAM
-- Linux / Ubuntu
-- Bash Scripting
-- Python
-- Boto3
-- Cron Jobs
+- Bash and cron
+- Python and Boto3
 
-## 📂 Project Structure
+## Project files
 
-```text
-self-healing-ec2-nginx/
-│
-├── README.md
-├── healthcheck.sh
-└── lambda_function.py
-```
+- `healthcheck.sh` – checks the Nginx service and publishes its status to CloudWatch.
+- `lambda_function.py` – handles the recovery action by sending a command through SSM.
+- `architecture.svg` – architecture diagram displayed above.
 
-### Important Files
+## What I worked on
 
-**1. healthcheck.sh**
+- Monitoring a Linux service with a Bash script.
+- Sending custom metrics to CloudWatch.
+- Configuring an alarm for failed health checks.
+- Connecting CloudWatch alarms to SNS and Lambda.
+- Using Systems Manager to run a recovery command on EC2.
+- Setting up the IAM permissions needed for the workflow.
 
-- Checks Nginx service status.
-- Publishes custom metrics to CloudWatch.
-- Runs automatically through cron.
+## Possible next steps
 
-**2. lambda_function.py**
-
-- Receives SNS-triggered events.
-- Uses Boto3 to communicate with AWS Systems Manager.
-- Executes the Nginx restart command on EC2.
-
-## 🔐 Security Implementation
-
-- IAM roles for EC2 and Lambda.
-- EC2 uses Systems Manager instead of SSH keys for remote remediation.
-- Lambda receives only the permissions required to execute SSM commands.
-- IAM policies follow the principle of least privilege.
-
-## 🎯 Key Learning Outcomes
-
-- Automated infrastructure monitoring.
-- CloudWatch custom metrics and alarms.
-- Event-driven automation using SNS and Lambda.
-- Remote command execution using AWS Systems Manager.
-- Linux Bash scripting and cron scheduling.
-- IAM roles and permissions.
-- Building self-healing cloud infrastructure.
-
-## 🚀 Future Improvements
-
-- Integrate Auto Scaling Groups to replace unhealthy EC2 instances.
+- Use an Auto Scaling Group to replace an unhealthy EC2 instance.
 - Add Slack notifications.
-- Monitor multiple services.
-- Create Grafana dashboards for monitoring.
-- Integrate Prometheus for advanced observability.
-
-## 👨‍💻 Author
-
-**Nikhil Thakare**
-
-Aspiring DevOps Engineer | AWS | Linux | Docker | Kubernetes | Terraform | Jenkins
-
-GitHub: [Nikhilthakare2389](https://github.com/Nikhilthakare2389)
-
----
-
- If you find this project useful, feel free to explore the repository and share your feedback.
+- Extend the health check to cover more services.
